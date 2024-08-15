@@ -1182,7 +1182,7 @@ class RunAlgs:
     command += c.javaCommand.split()
 
     # 77: always enable Java Flight Recorder profiling
-    command += [f'-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings={constants.BENCH_BASE_DIR}/src/python/profiling.jfc' +
+    command += [f'-Djava.compiler=NONE -XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings={constants.BENCH_BASE_DIR}/src/python/profiling.jfc' +
                 f',filename={constants.LOGS_DIR}/bench-search-{id}-{c.name}-{iter}.jfr',
                 '-XX:+UnlockDiagnosticVMOptions',
                 '-XX:+DebugNonSafepoints']
