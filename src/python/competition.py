@@ -486,7 +486,7 @@ class Competition(object):
     # ~15 (I've tested up to 1000) doesn't alter results, ie once
     # hotspot compiles (after 1st or 2nd time the query is run) it
     # doesn't seem to re-compile:
-    self.taskRepeatCount = taskRepeatCount
+    self.taskRepeatCount = 1000 # taskRepeatCount
 
     # JVM count: how many times to run the java process for each
     # competitor.  Increase this to get more repeatable results, because each run can compile the
