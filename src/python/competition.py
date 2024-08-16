@@ -317,7 +317,7 @@ class Competitor(object):
     self.javaCommand = javaCommand
     self.printHeap = printHeap
     self.hiliteImpl = hiliteImpl
-    self.pk = pk
+    self.pk = False
     self.loadStoredFields = loadStoredFields
     self.exitable = exitable
     if vectorDict is not None and vectorFileName is not None:
