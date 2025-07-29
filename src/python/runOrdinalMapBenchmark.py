@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-import localconstants
+import constants
 
 
 def main():
@@ -41,7 +41,7 @@ def run_benchmark(lucene_dir, geonames_csv_in, index_dir, nightly_log_dir, doc_l
   start_time_sec = time.time()
   print(f"Now run with doc_limit={doc_limit}:")
 
-  cmd = f"{localconstants.JAVA_EXE} -cp {lucene_core_jar}:build perf.OrdinalMapBenchmark {geonames_csv_in} {localconstants.INDEX_DIR_BASE}/geonames-ordinal-map {doc_limit}"
+  cmd = f"{constants.JAVA_EXE} -cp {lucene_core_jar}:build perf.OrdinalMapBenchmark {geonames_csv_in} {constants.INDEX_DIR_BASE}/geonames-ordinal-map {doc_limit}"
   print(f'cmd ="{cmd}"')
   results = subprocess.run(cmd, shell=True, capture_output=True, check=False)
   stdout = results.stdout.decode("utf-8")

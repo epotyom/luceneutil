@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-import localconstants
+import constants
 
 
 def main():
@@ -32,7 +32,7 @@ def run_benchmark(lucene_dir, geonames_csv_in, index_dir, nightly_log_dir, doc_l
   lucene_core_jar = lucene_core_jar[0]
 
   # compile
-  cmd = f"{localconstants.JAVAC_EXE} -cp {lucene_core_jar} -d build src/extra/perf/StoredFieldsBenchmark.java"
+  cmd = f"{constants.JAVAC_EXE} -cp {lucene_core_jar} -d build src/extra/perf/StoredFieldsBenchmark.java"
   print(f"RUN: {cmd}, cwd={os.getcwd()}")
   subprocess.check_call(cmd, shell=True)
 
@@ -42,7 +42,7 @@ def run_benchmark(lucene_dir, geonames_csv_in, index_dir, nightly_log_dir, doc_l
   start_time_sec = time.time()
   for mode in "BEST_SPEED", "BEST_COMPRESSION":
     print(f"Now run {mode} with doc_limit={doc_limit}:")
-    command = f"{localconstants.JAVA_EXE} -cp {lucene_core_jar}:build perf.StoredFieldsBenchmark {geonames_csv_in} {localconstants.INDEX_DIR_BASE}/geonames-stored-fields {mode} {doc_limit}"
+    command = f"{constants.JAVA_EXE} -cp {lucene_core_jar}:build perf.StoredFieldsBenchmark {geonames_csv_in} {constants.INDEX_DIR_BASE}/geonames-stored-fields {mode} {doc_limit}"
     print(f"RUN: {command}")
     results = subprocess.run(command, shell=True, capture_output=True, check=False)
     stdout = results.stdout.decode("utf-8")

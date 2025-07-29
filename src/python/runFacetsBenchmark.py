@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 
-import localconstants
+import constants
 
 
 def main():
@@ -42,23 +42,23 @@ def run_benchmark(lucene_dir, index_dir, data_dir, nightly_log_dir, doc_limit, n
   lucene_facet_jar = lucene_facet_jar[0]
 
   # compile indexer
-  index_compile_cmd = f"{localconstants.JAVA_HOME}/bin/javac -cp {lucene_core_jar}:{lucene_facet_jar}:build -d build src/main/perf/facets/IndexFacets.java"
+  index_compile_cmd = f"{constants.JAVAC_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build -d build src/main/perf/facets/IndexFacets.java"
   print(f"RUN: {index_compile_cmd}, cwd={os.getcwd()}")
   subprocess.check_call(index_compile_cmd, shell=True)
 
   # compile searcher
-  searcher_compile_cmd = f"{localconstants.JAVA_HOME}/bin/javac -cp {lucene_core_jar}:{lucene_facet_jar}:build -d build src/main/perf/facets/BenchmarkFacets.java"
+  searcher_compile_cmd = f"{constants.JAVAC_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build -d build src/main/perf/facets/BenchmarkFacets.java"
   print(f"RUN: {searcher_compile_cmd}, cwd={os.getcwd()}")
   subprocess.check_call(searcher_compile_cmd, shell=True)
 
   # run indexing
-  index_cmd = f"{localconstants.JAVA_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build perf.facets.IndexFacets {data_dir}/NAD_taxonomy.txt.gz {index_dir} {doc_limit}"
+  index_cmd = f"{constants.JAVA_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build perf.facets.IndexFacets {data_dir}/NAD_taxonomy.txt.gz {index_dir} {doc_limit}"
   print(f"RUN: {index_cmd}, cwd={os.getcwd()}")
   print("Indexing documents...\n")
   subprocess.check_call(index_cmd, shell=True)
 
   # run benchmark
-  benchmark_cmd = f"{localconstants.JAVA_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build perf.facets.BenchmarkFacets {index_dir} {num_iters}"
+  benchmark_cmd = f"{constants.JAVA_EXE} -cp {lucene_core_jar}:{lucene_facet_jar}:build perf.facets.BenchmarkFacets {index_dir} {num_iters}"
   print(f"RUN: {benchmark_cmd}, cwd={os.getcwd()}")
   results = subprocess.run(benchmark_cmd, shell=True, capture_output=True, check=False)
 

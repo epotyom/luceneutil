@@ -163,7 +163,7 @@ public class NRTPerfTest {
             IndexSearcher newS = manager.acquire();
             try {
               if (curS != newS) {
-                System.out.println("Reopen: " + String.format("%9.4f", (System.nanoTime() - tStart)/1000000.0) + " msec");
+                System.out.println("Reopen: " + String.format(Locale.ROOT, "%9.4f", (System.nanoTime() - tStart)/1000000.0) + " msec");
                 reopensByTime[currentQT.get()].incrementAndGet();
               } else {
                 System.out.println("WARNING: no changes on reopen");
