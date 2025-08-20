@@ -73,8 +73,9 @@ DISJUNCTION_INTENSIVE_TASKS_FILE = "%s/tasks/disjunctionIntensive.tasks" % BENCH
 COMBINED_FIELDS_TASKS_FILE = "%s/tasks/combinedfields.tasks" % BENCH_BASE_DIR
 COMBINED_FIELDS_UNEVENLY_WEIGHTED_TASKS_FILE = "%s/tasks/combinedfields.unevenlyweighted.tasks" % BENCH_BASE_DIR
 
+## TODO: this link doesn't work, so I temporary changed to medium, but we should find the big file?
 # wget http://home.apache.org/~mikemccand/enwiki-20120502-lines-with-random-label.txt.lzma
-WIKI_BIG_DOCS_LINE_FILE = "%s/data/enwiki-20120502-lines-with-random-label.txt" % BASE_DIR
+WIKI_BIG_DOCS_LINE_FILE = "%s/data/enwiki-20120502-lines-1k-fixed-utf8-with-random-label.txt" % BASE_DIR
 # WIKI_BIG_DOCS_LINE_FILE = '%s/data/enwiki-20130102-lines.txt' % BASE_DIR
 
 # 33332620 docs in enwiki-20120502-lines-1k.txt'
