@@ -26,8 +26,8 @@ COUNTY_INDEX = 2
 STREETNAME_INDEX = 15
 ADDNAME_INDEX = 20
 
-with ZipFile("../../../data/NAD_r8_TXT.zip", "r") as zip:
-  with zip.open("TXT/NAD_r8.txt", "r") as nad:
+with ZipFile("../../../data/NAD_r19_TXT.zip", "r") as zip:
+  with zip.open("TXT/NAD_r19.txt", "r") as nad:
     with gzip.open("../../../data/NAD_taxonomy.txt.gz", "wb") as out:
       i = 0
       skipped_lines = 0
