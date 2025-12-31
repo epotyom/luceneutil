@@ -39,8 +39,8 @@ import knnPerfTest
 # VECTORS_DIM =  768
 
 # Cohere v3, switched Dec 7 2025:
-INDEX_VECTORS_FILE = "/big/cohere-v3-wikipedia-en-scattered-1024d.docs.vec"
-SEARCH_VECTORS_FILE = "/lucenedata/enwiki/cohere-v3/cohere-v3-wikipedia-en-scattered-1024d.queries.vec"
+INDEX_VECTORS_FILE = "/l/data/cohere-v3-wikipedia-en-scattered-1024d.docs.first1M.vec"
+SEARCH_VECTORS_FILE = "/l/data/cohere-v3-wikipedia-en-scattered-1024d.queries.first200K.vec"
 VECTORS_DIM = 1024
 
 VECTORS_ENCODING = "float32"
