@@ -357,10 +357,12 @@ This benchmark indexes 8.0M and searches Cohere 768 dimension vectors from https
 </div>
 """)
 
+    print(series.keys())
+
     write_one_graph(
       f,
       timestamps,
-      (series["no"], series["no.force_merge"], series["7 bits"], series["7 bits.force_merge"], series["4 bits"], series["4 bits.force_merge"]),
+      (series.get("no", []), series.get("no.force_merge", []), series.get("7 bits", []), series.get("7 bits.force_merge", []), series.get("4 bits", []), series.get("4 bits.force_merge", [])),
       "knn_recall",
       "Recall",
       headers=("Date", "float32", "float32 1seg", "7 bits", "7 bits 1seg", "4 bits", "4 bits 1seg"),
