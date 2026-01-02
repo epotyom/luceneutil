@@ -182,7 +182,8 @@ PERF_STATS = (
 )
 
 NIGHTLY_REPORTS_DIR = "%s/reports.nightly" % BASE_DIR
-NIGHTLY_LOG_DIR = "%s/nightly_logs" % BASE_DIR
+# It has to match LOGS_DIR because runNightlyKnn.py write_graph uses LOGS_DIR, the rest of the file uses NIGHTLY_LOG_DIR
+NIGHTLY_LOG_DIR = "%s/logs" % BASE_DIR
 # Copied from commit 3f02fa1de8b22d1f6c7b94aeb601ff2614d4001e
 # TODO: hmmm, why big < medium ??
 NIGHTLY_MEDIUM_INDEX_NUM_DOCS = 27625038
