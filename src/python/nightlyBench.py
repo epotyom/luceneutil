@@ -702,7 +702,8 @@ def run():
     if os.path.exists(prevFName):
       resultsPrev.append(prevFName)
 
-  if len(resultsPrev) == 0 and DEBUG:
+  #if len(resultsPrev) == 0 and DEBUG:
+  if len(resultsPrev) == 0:
     # sidestep exception when we can't find any previous results because DEBUG
     resultsPrev = resultsNow
 
