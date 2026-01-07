@@ -725,7 +725,7 @@ def run():
       os.mkdir(subDirName)
       print(f"  {subDirName}")
       # TODO: optimize to single shared copy!
-      shutil.copy("/usr/share/gnuplot/6.0/js/gnuplot_svg.js", subDirName)
+      shutil.copy(f"{constants.BENCH_BASE_DIR}/src/javascript/gnuplot_svg.js", subDirName)
       shutil.copy(f"{constants.BENCH_BASE_DIR}/src/vmstat/index.html.template", f"{subDirName}/index.html")
       subprocess.check_call(f"gnuplot -c {constants.BENCH_BASE_DIR}/src/vmstat/vmstat.gpi {vmstatLogFileName} {prefix}", shell=True)
 
