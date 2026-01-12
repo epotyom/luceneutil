@@ -834,7 +834,7 @@ def run():
     w("</pre>")
     w("</html>\n")
 
-    if not DEBUG and REAL:
+    if False:
       # Blunders upload:
       blunders.upload(
         f"Searching ({timeStamp})",
