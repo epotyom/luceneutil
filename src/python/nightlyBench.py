@@ -405,7 +405,7 @@ def run():
 
   r = benchUtil.RunAlgs(constants.JAVA_COMMAND, verifyScores, verifyCounts)
 
-  comp = competition.Competition(
+  nightly_competition = competition.Competition(
     taskRepeatCount=TASK_REPEAT_COUNT,
     taskCountPerCat=COUNTS_PER_CAT,
     verifyCounts=False,  # only verify top hits, not counts
@@ -414,7 +414,7 @@ def run():
 
   mediumSource = competition.Data("wikimedium", constants.NIGHTLY_MEDIUM_LINE_FILE, MEDIUM_INDEX_NUM_DOCS, constants.WIKI_MEDIUM_TASKS_FILE)
 
-  fastIndexMedium = comp.newIndex(
+  fastIndexMedium = nightly_competition.newIndex(
     NIGHTLY_DIR,
     mediumSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -431,7 +431,7 @@ def run():
     useCMS=True,
   )
 
-  fastIndexMediumVectors = comp.newIndex(
+  fastIndexMediumVectors = nightly_competition.newIndex(
     NIGHTLY_DIR,
     mediumSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -451,7 +451,7 @@ def run():
     vectorEncoding=constants.VECTORS_TYPE,
   )
 
-  fastIndexMediumVectorsQuantized = comp.newIndex(
+  fastIndexMediumVectorsQuantized = nightly_competition.newIndex(
     NIGHTLY_DIR,
     mediumSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -472,7 +472,7 @@ def run():
     quantizeKNNGraph=True,
   )
 
-  nrtIndexMedium = comp.newIndex(
+  nrtIndexMedium = nightly_competition.newIndex(
     NIGHTLY_DIR,
     mediumSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -492,7 +492,7 @@ def run():
 
   bigSource = competition.Data("wikibig", constants.NIGHTLY_BIG_LINE_FILE, BIG_INDEX_NUM_DOCS, constants.WIKI_MEDIUM_TASKS_FILE)
 
-  fastIndexBig = comp.newIndex(
+  fastIndexBig = nightly_competition.newIndex(
     NIGHTLY_DIR,
     bigSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -510,7 +510,7 @@ def run():
   )
 
   # Must use only 1 thread so we get same index structure, always:
-  index = comp.newIndex(
+  index = nightly_competition.newIndex(
     NIGHTLY_DIR,
     mediumSource,
     analyzer="StandardAnalyzerNoStopWords",
@@ -544,7 +544,7 @@ def run():
     print(f"NOTE: now delete old leftover ginormous index {index_path}")
     shutil.rmtree(index_path)
 
-  c = comp.competitor(
+  nightly_competitor = nightly_competition.competitor(
     id,
     NIGHTLY_DIR,
     index=index,
@@ -560,7 +560,7 @@ def run():
   # c = benchUtil.Competitor(id, 'trunk.nightly', index, DIR_IMPL, 'StandardAnalyzerNoStopWords', 'multi', constants.WIKI_MEDIUM_TASKS_FILE)
 
   if REAL:
-    r.compile(c)
+    r.compile(nightly_competitor)
 
   # stored fields benchy
   if not DEBUG and not DO_RESET:
@@ -664,9 +664,8 @@ def run():
   t0 = now()
 
   coldRun = False
-  comp = c
-  comp.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.tasks"
-  comp.printHeap = True
+  nightly_competitor.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.tasks"
+  nightly_competitor.printHeap = True
   if REAL:
     vmstatLogFile = f"{runLogDir}/search-tasks.vmstat.log"
     topLogFile = f"{runLogDir}/search-tasks.top.log"
@@ -681,7 +680,18 @@ def run():
     resultsNow = []
     for iter in range(JVM_COUNT):
       seed = rand.randint(-10000000, 1000000)
-      resultsNow.append(r.runSimpleSearchBench(iter, id, comp, coldRun, seed, staticSeed, filter=None))
+      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
+    # Now run facet tests. They require slightly different configuration
+    # because we want to compare post collection and during collection facet performance.
+    # Post collection facets usually utilize main thread, and during collection facets use searcher thread
+    # as a result we might get arbitrary results if we shuffle tasks instead of grouping them by category.
+    # TODO Not sure if making competition/competitor (more) mutable is a good idea?
+    nightly_competition.groupByCat = True
+    # TODO: change taskRepeatCount to 200 same as runFacets?
+    nightly_competitor.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.facets.tasks"
+    for iter in range(JVM_COUNT):
+      seed = rand.randint(-10000000, 1000000)
+      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
 
     print(f"now kill vmstat: pid={vmstatProcess.pid}")
     # TODO: messy!  can we get process group working so we can kill bash and its child reliably?
@@ -691,7 +701,7 @@ def run():
     topProcess.stop()
 
   else:
-    resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, comp.name, iter) for iter in range(20)]
+    resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(20)]
   message("done search (%s)" % (now() - t0))
   resultsPrev = []
 
@@ -820,7 +830,7 @@ def run():
     w('<a id="profiler_searching_cpu"></a>')
     w("<b>CPU:</b><br>")
     w("<pre>\n")
-    for stackSize, result in comp.getAggregateProfilerResult(id, "cpu", stackSize=JFR_STACK_SIZES, count=50):
+    for stackSize, result in nightly_competition.getAggregateProfilerResult(id, "cpu", stackSize=JFR_STACK_SIZES, count=50):
       w(f'\n<a id="profiler_searching_{stackSize}_cpu"></a>')
       w(f"\n<pre>{result}</pre>")
 
@@ -828,7 +838,7 @@ def run():
     w("<b>HEAP:</b><br>")
     w('<a id="profiler_searching_heap"></a>')
     w("<pre>\n")
-    for stackSize, result in comp.getAggregateProfilerResult(id, "heap", stackSize=JFR_STACK_SIZES, count=50):
+    for stackSize, result in nightly_competition.getAggregateProfilerResult(id, "heap", stackSize=JFR_STACK_SIZES, count=50):
       w(f'\n<a id="profiler_searching_{stackSize}_heap"></a>')
       w(f"\n<pre>{result}</pre>")
     w("</pre>")
@@ -841,7 +851,7 @@ def run():
         f"searching-{timeStamp}",
         f"Profiled results during search benchmarks in Lucene's nightly benchmarks on {timeStamp}.  See <a href='https://home.apache.org/~mikemccand/lucenebench/{timeStamp}.html'>here</a> for full details.",
         # glob.glob(f'{constants.BENCH_BASE_DIR}/bench-search-{id}-{comp.name}-*.jfr'))
-        glob.glob(f"{constants.NIGHTLY_LOG_DIR}/bench-search-{id}-{comp.name}-*.jfr"),
+        glob.glob(f"{constants.NIGHTLY_LOG_DIR}/bench-search-{id}-{nightly_competition.name}-*.jfr"),
       )
 
       blunders.upload(
@@ -914,6 +924,7 @@ def run():
     closedPRCount,
     medQuantizedVectorsIndexTime,
     medQuantizedVectorsBytesIndexed,
+    facetResults,
   )
 
   for fname in resultsNow:
@@ -1073,6 +1084,7 @@ def makeGraphs():
   gcIndexTimesChartData = ["Date,JIT (sec),Young GC (sec),Old GC (sec)"]
   fixedIndexSizeChartData = ["Date,Size (GB)"]
   gcSearchTimesChartData = ["Date,JIT (sec),Young GC (sec),Old GC (sec)"]
+  searchChartHeaders = {}
   searchChartData = {}
   storedFieldsResults = {
     "Index size": ["Date,Index size BEST_SPEED (MB),Index size BEST_COMPRESSION (MB)"],
@@ -1184,9 +1196,23 @@ def makeGraphs():
           if isinstance(cat, bytes):
             # TODO: why does this happen!?
             cat = str(cat, "utf-8")
+          # Show all subcategory graphs together
+          if '+' in cat:
+            cat, subcat = cat.split('+')
+          else:
+            subcat = "QPS"
 
+          if cat not in searchChartHeaders:
+            searchChartHeaders[cat] = ["Date"]
           if cat not in searchChartData:
-            searchChartData[cat] = ["Date,QPS"]
+            searchChartData[cat] = {timeStampString: []}
+          elif timeStampString not in searchChartData[cat]:
+            searchChartData[cat][timeStampString] = []
+          try:
+            subcat_ordinal = searchChartHeaders[cat].index(subcat, 1)  # first element is always Date
+          except ValueError:
+            subcat_ordinal = len(searchChartHeaders[cat])
+            searchChartHeaders[cat].append(subcat)
           if cat == "PKLookup":
             qpsMult = 4000
           else:
@@ -1213,7 +1239,10 @@ def makeGraphs():
             # see https://github.com/mikemccand/luceneutil/commit/56729cf341a443fb81148dd25d3d49cb88bc72e8
             continue
 
-          searchChartData[cat].append("%s,%.3f,%.3f" % (timeStampString, avgQPS * qpsMult, stdDevQPS * qpsMult))
+          # make sure searchChartData list size is sufficient
+          while subcat_ordinal >= len(searchChartData[cat][timeStampString]):
+            searchChartData[cat][timeStampString].append(0)
+          searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f" % avgQPS * qpsMult
 
         fixed_index_size_file_name = f"{constants.NIGHTLY_LOG_DIR}/{subDir}/fixed_index_bytes.pk"
         if os.path.exists(fixed_index_size_file_name):
@@ -1295,8 +1324,11 @@ def makeGraphs():
   sort(bigIndexChartData)
   sort(gcIndexTimesChartData)
   sort(fixedIndexSizeChartData)
-  for k, v in list(searchChartData.items()):
-    sort(v)
+  searchChartDataFinal = {cat:
+                            [",".join(searchChartHeaders)]
+                            + [ ts + "," + ",".join(v) for ts,v in data.items()].sort()
+                          for cat, data in searchChartData.items()}
+
 
   # Index time, including GC/JIT times
   writeIndexingHTML(fixedIndexSizeChartData, medIndexChartData, medIndexVectorsChartData, medIndexQuantizedVectorsChartData, bigIndexChartData, gcIndexTimesChartData)
@@ -1309,15 +1341,15 @@ def makeGraphs():
 
   # GitHub PR open/closed counts
 
-  for k, v in list(searchChartData.items())[:]:
+  for k, v in list(searchChartDataFinal.items())[:]:
     # Graph does not render right with only one value:
     if len(v) > 1:
       writeOneGraphHTML("Lucene %s queries/sec" % taskRename.get(k, k), "%s/%s.html" % (constants.NIGHTLY_REPORTS_DIR, k), getOneGraphHTML(k, v, "Queries/sec", taskRename.get(k, k), errorBars=True))
     else:
       print("skip %s: %s" % (k, len(v)))
-      del searchChartData[k]
+      del searchChartDataFinal[k]
 
-  writeIndexHTML(searchChartData, days)
+  writeIndexHTML(searchChartDataFinal, days)
 
   writeGitHubPRChartHTML(gitHubPRChartData)
 
