@@ -321,6 +321,7 @@ def run():
   print()
   message("start")
   id = "nightly"
+  facet_tasks_id = "facets_nightly"
   if not REAL:
     start = datetime.datetime(year=2011, month=5, day=19, hour=23, minute=00, second=0o1)
   else:
@@ -410,6 +411,19 @@ def run():
     taskCountPerCat=COUNTS_PER_CAT,
     verifyCounts=False,  # only verify top hits, not counts
     jvmCount=20,
+  )
+
+  # For facet tests. They require slightly different configuration
+  # because we want to compare post collection and during collection facet performance.
+  # Post collection facets usually utilize main thread, and during collection facets use searcher thread
+  # as a result we might get arbitrary results if we shuffle tasks instead of grouping them by category.
+  nightly_competition_facets = competition.Competition(
+    # TODO: runFacets uses 200, do we want to increase here?
+    taskRepeatCount=TASK_REPEAT_COUNT,
+    taskCountPerCat=COUNTS_PER_CAT,
+    verifyCounts=False,
+    jvmCount=20,
+    groupByCat=True,
   )
 
   mediumSource = competition.Data("wikimedium", constants.NIGHTLY_MEDIUM_LINE_FILE, MEDIUM_INDEX_NUM_DOCS, constants.WIKI_MEDIUM_TASKS_FILE)
@@ -557,10 +571,82 @@ def run():
     searchConcurrency=SEARCH_CONCURRENCY,
   )
 
+  # For facet tests
+  nightly_competitor_facets = nightly_competition_facets.competitor(
+    facet_tasks_id,
+    NIGHTLY_DIR,
+    index=index,
+    # vectorDict=(constants.VECTORS_WORD_TOK_FILE, constants.VECTORS_WORD_VEC_FILE, constants.VECTORS_DIMENSIONS),
+    vectorFileName=constants.VECTORS_QUERY_FILE,
+    vectorDimension=constants.VECTORS_DIMENSIONS,
+    directory=DIR_IMPL,
+    commitPoint="multi",
+    numConcurrentQueries=1,
+    searchConcurrency=SEARCH_CONCURRENCY,
+  )
+
   # c = benchUtil.Competitor(id, 'trunk.nightly', index, DIR_IMPL, 'StandardAnalyzerNoStopWords', 'multi', constants.WIKI_MEDIUM_TASKS_FILE)
 
   if REAL:
     r.compile(nightly_competitor)
+    r.compile(nightly_competitor_facets)
+
+  # START moved block
+  # 5: test searching speed; first build index, flushed by doc count (so we get same index structure night to night)
+  # TODO: switch to concurrent yet deterministic indexer: https://markmail.org/thread/cp6jpjuowbhni6xc
+  indexPathNow, ign, ign, atClose, profilerSearchIndex, profilerSearchJFR = buildIndex(r, runLogDir, "search index (fixed segments)", index, "fixedIndex.log")
+  message("fixedIndexAtClose %s" % atClose)
+  fixedIndexAtClose = atClose
+
+  indexPathPrev = "%s/trunk.nightly.index.prev" % constants.INDEX_DIR_BASE
+
+  if os.path.exists(indexPathPrev) and os.path.exists(benchUtil.nameToIndexPath(index.getName())):
+    segCountPrev = benchUtil.getSegmentCount(indexPathPrev)
+    segCountNow = benchUtil.getSegmentCount(benchUtil.nameToIndexPath(index.getName()))
+    if segCountNow != segCountPrev:
+      # raise RuntimeError('different index segment count prev=%s now=%s' % (segCountPrev, segCountNow))
+      print("WARNING: different index segment count prev=%s now=%s" % (segCountPrev, segCountNow))
+
+  # Search
+  rand = random.Random(714)
+  staticSeed = rand.randint(-10000000, 1000000)
+  # staticSeed = -1492352
+  message("search")
+  t0 = now()
+  coldRun = False
+  nightly_competitor.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.tasks"
+  nightly_competitor.printHeap = True
+  nightly_competitor_facets.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.facets.tasks"
+  nightly_competitor_facets.printHeap = True
+  if REAL:
+    vmstatLogFile = f"{runLogDir}/search-tasks.vmstat.log"
+    topLogFile = f"{runLogDir}/search-tasks.top.log"
+
+    vmstatCmd = f"{benchUtil.VMSTAT_PATH} --active --wide --timestamp --unit M 1 > {vmstatLogFile} 2>/dev/null &"
+    print(f"run vmstat: {vmstatCmd}")
+    vmstatProcess = subprocess.Popen(vmstatCmd, shell=True, preexec_fn=os.setsid)
+
+    topProcess = ps_head.PSTopN(10, topLogFile)
+    print(f"run {topProcess.cmd} to {topLogFile}")
+
+    resultsNow = []
+    for iter in range(JVM_COUNT):
+      seed = rand.randint(-10000000, 1000000)
+      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
+      resultsNow.append(r.runSimpleSearchBench(iter, facet_tasks_id, nightly_competitor_facets, coldRun, seed, staticSeed, filter=None))
+
+    print(f"now kill vmstat: pid={vmstatProcess.pid}")
+    # TODO: messy!  can we get process group working so we can kill bash and its child reliably?
+    subprocess.check_call(["pkill", "-u", benchUtil.get_username(), "vmstat"])
+    if vmstatProcess.poll() is None:
+      raise RuntimeError("failed to kill vmstat child process?  pid={vmstatProcess.pid}")
+    topProcess.stop()
+
+  else:
+    resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(JVM_COUNT)]
+    resultsNow.extend(["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, facet_tasks_id, nightly_competitor_facets.name, iter) for iter in range(JVM_COUNT)])
+  message("done search (%s)" % (now() - t0))
+  #END moved block
 
   # stored fields benchy
   if not DEBUG and not DO_RESET:
@@ -640,69 +726,7 @@ def run():
   message("bigIndexAtClose %s" % atClose)
   shutil.rmtree(bigIndexPath)
 
-  # 5: test searching speed; first build index, flushed by doc count (so we get same index structure night to night)
-  # TODO: switch to concurrent yet deterministic indexer: https://markmail.org/thread/cp6jpjuowbhni6xc
-  indexPathNow, ign, ign, atClose, profilerSearchIndex, profilerSearchJFR = buildIndex(r, runLogDir, "search index (fixed segments)", index, "fixedIndex.log")
-  message("fixedIndexAtClose %s" % atClose)
-  fixedIndexAtClose = atClose
-
-  indexPathPrev = "%s/trunk.nightly.index.prev" % constants.INDEX_DIR_BASE
-
-  if os.path.exists(indexPathPrev) and os.path.exists(benchUtil.nameToIndexPath(index.getName())):
-    segCountPrev = benchUtil.getSegmentCount(indexPathPrev)
-    segCountNow = benchUtil.getSegmentCount(benchUtil.nameToIndexPath(index.getName()))
-    if segCountNow != segCountPrev:
-      # raise RuntimeError('different index segment count prev=%s now=%s' % (segCountPrev, segCountNow))
-      print("WARNING: different index segment count prev=%s now=%s" % (segCountPrev, segCountNow))
-
-  # Search
-  rand = random.Random(714)
-  staticSeed = rand.randint(-10000000, 1000000)
-  # staticSeed = -1492352
-
-  message("search")
-  t0 = now()
-
-  coldRun = False
-  nightly_competitor.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.tasks"
-  nightly_competitor.printHeap = True
-  if REAL:
-    vmstatLogFile = f"{runLogDir}/search-tasks.vmstat.log"
-    topLogFile = f"{runLogDir}/search-tasks.top.log"
-
-    vmstatCmd = f"{benchUtil.VMSTAT_PATH} --active --wide --timestamp --unit M 1 > {vmstatLogFile} 2>/dev/null &"
-    print(f"run vmstat: {vmstatCmd}")
-    vmstatProcess = subprocess.Popen(vmstatCmd, shell=True, preexec_fn=os.setsid)
-
-    topProcess = ps_head.PSTopN(10, topLogFile)
-    print(f"run {topProcess.cmd} to {topLogFile}")
-
-    resultsNow = []
-    for iter in range(JVM_COUNT):
-      seed = rand.randint(-10000000, 1000000)
-      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
-    # Now run facet tests. They require slightly different configuration
-    # because we want to compare post collection and during collection facet performance.
-    # Post collection facets usually utilize main thread, and during collection facets use searcher thread
-    # as a result we might get arbitrary results if we shuffle tasks instead of grouping them by category.
-    # TODO Not sure if making competition/competitor (more) mutable is a good idea?
-    nightly_competition.groupByCat = True
-    # TODO: change taskRepeatCount to 200 same as runFacets?
-    nightly_competitor.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.facets.tasks"
-    for iter in range(JVM_COUNT):
-      seed = rand.randint(-10000000, 1000000)
-      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
-
-    print(f"now kill vmstat: pid={vmstatProcess.pid}")
-    # TODO: messy!  can we get process group working so we can kill bash and its child reliably?
-    subprocess.check_call(["pkill", "-u", benchUtil.get_username(), "vmstat"])
-    if vmstatProcess.poll() is None:
-      raise RuntimeError("failed to kill vmstat child process?  pid={vmstatProcess.pid}")
-    topProcess.stop()
-
-  else:
-    resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(20)]
-  message("done search (%s)" % (now() - t0))
+  # Placeholder for search block
   resultsPrev = []
 
   searchResults = searchHeap = None
