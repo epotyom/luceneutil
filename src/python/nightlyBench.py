@@ -554,9 +554,10 @@ def run():
 
   # this index is gigantic -- if a turd is leftover from a prior failed run, nuke it now!!
   index_path = benchUtil.nameToIndexPath(index.getName())
-  if os.path.exists(index_path):
-    print(f"NOTE: now delete old leftover ginormous index {index_path}")
-    shutil.rmtree(index_path)
+  ## nocommit: uncomment after debug
+  #if os.path.exists(index_path):
+  #  print(f"NOTE: now delete old leftover ginormous index {index_path}")
+  #  shutil.rmtree(index_path)
 
   nightly_competitor = nightly_competition.competitor(
     id,
@@ -593,10 +594,12 @@ def run():
 
   # START moved block
   # 5: test searching speed; first build index, flushed by doc count (so we get same index structure night to night)
+  # TODO: temporarily can we avoid indexing during debug? The path is `/workplace/epotyom/upstream_lucene/indices/wikimedium.trunk.nightly.facets.taxonomy:Date.taxonomy:Month.taxonomy:DayOfYear.sortedset:Month.sortedset:DayOfYear.sortedset:Date.taxonomy:RandomLabel.sortedset:RandomLabel.Lucene90.Lucene104.dvfields.vectors=768.nd27.625M`
   # TODO: switch to concurrent yet deterministic indexer: https://markmail.org/thread/cp6jpjuowbhni6xc
-  indexPathNow, ign, ign, atClose, profilerSearchIndex, profilerSearchJFR = buildIndex(r, runLogDir, "search index (fixed segments)", index, "fixedIndex.log")
-  message("fixedIndexAtClose %s" % atClose)
-  fixedIndexAtClose = atClose
+  ##indexPathNow, ign, ign, atClose, profilerSearchIndex, profilerSearchJFR = buildIndex(r, runLogDir, "search index (fixed segments)", index, "fixedIndex.log")
+  ##message("fixedIndexAtClose %s" % atClose)
+  ##fixedIndexAtClose = atClose
+  fixedIndexAtClose = "atClose!!"
 
   indexPathPrev = "%s/trunk.nightly.index.prev" % constants.INDEX_DIR_BASE
 
@@ -962,12 +965,13 @@ def run():
     for fname in resultsNow:
       shutil.move(fname, fname + ".prev")
 
-    if not DEBUG:
-      # print 'rename %s to %s' % (indexPathNow, indexPathPrev)
-      if os.path.exists(indexPathNow):
-        if os.path.exists(indexPathPrev):
-          shutil.rmtree(indexPathPrev)
-        os.rename(indexPathNow, indexPathPrev)
+    #if not DEBUG:
+    #  # print 'rename %s to %s' % (indexPathNow, indexPathPrev)
+    #  # TODO nocommit: uncomment before PR
+    #  #if os.path.exists(indexPathNow):
+    #  #  if os.path.exists(indexPathPrev):
+    #  #    shutil.rmtree(indexPathPrev)
+    #  #  os.rename(indexPathNow, indexPathPrev)
 
     os.chdir(runLogDir)
     # tar/bz2 log files, but not results files from separate benchmarks (e.g. stored fields):
