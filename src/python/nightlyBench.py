@@ -618,6 +618,7 @@ def run():
   nightly_competitor.printHeap = True
   nightly_competitor_facets.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.facets.tasks"
   nightly_competitor_facets.printHeap = True
+  resultsNow = []
   if REAL:
     vmstatLogFile = f"{runLogDir}/search-tasks.vmstat.log"
     topLogFile = f"{runLogDir}/search-tasks.top.log"
@@ -629,7 +630,6 @@ def run():
     topProcess = ps_head.PSTopN(10, topLogFile)
     print(f"run {topProcess.cmd} to {topLogFile}")
 
-    resultsNow = []
     for iter in range(JVM_COUNT):
       seed = rand.randint(-10000000, 1000000)
       resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
@@ -646,6 +646,24 @@ def run():
     resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(JVM_COUNT)]
     resultsNow.extend(["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, facet_tasks_id, nightly_competitor_facets.name, iter) for iter in range(JVM_COUNT)])
   message("done search (%s)" % (now() - t0))
+
+  resultsPrev = []
+
+  searchResults = searchHeap = None
+
+  for fname in resultsNow:
+    prevFName = fname + ".prev"
+    if os.path.exists(prevFName):
+      resultsPrev.append(prevFName)
+
+  #if len(resultsPrev) == 0 and DEBUG:
+  if len(resultsPrev) == 0:
+    # sidestep exception when we can't find any previous results because DEBUG
+    resultsPrev = resultsNow
+
+  output = []
+  results, cmpDiffs, searchHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
+
   #END moved block
 
   # stored fields benchy
@@ -726,23 +744,7 @@ def run():
   message("bigIndexAtClose %s" % atClose)
   shutil.rmtree(bigIndexPath)
 
-  # Placeholder for search block
-  resultsPrev = []
-
-  searchResults = searchHeap = None
-
-  for fname in resultsNow:
-    prevFName = fname + ".prev"
-    if os.path.exists(prevFName):
-      resultsPrev.append(prevFName)
-
-  #if len(resultsPrev) == 0 and DEBUG:
-  if len(resultsPrev) == 0:
-    # sidestep exception when we can't find any previous results because DEBUG
-    resultsPrev = resultsNow
-
-  output = []
-  results, cmpDiffs, searchHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
+  ### Placeholder for search block
 
   # generate vmstat pretties
   print("generate vmstat pretties")
