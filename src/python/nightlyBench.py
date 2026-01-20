@@ -621,7 +621,8 @@ def run():
   nightly_competitor.printHeap = True
   nightly_competitor_facets.tasksFile = f"{constants.BENCH_BASE_DIR}/tasks/wikinightly.facets.tasks"
   nightly_competitor_facets.printHeap = True
-  resultsNow = []
+  resultsSearchNow = []
+  resultsFacetsNow = []
   if REAL:
     vmstatLogFile = f"{runLogDir}/search-tasks.vmstat.log"
     topLogFile = f"{runLogDir}/search-tasks.top.log"
@@ -635,8 +636,8 @@ def run():
 
     for iter in range(JVM_COUNT):
       seed = rand.randint(-10000000, 1000000)
-      resultsNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
-      resultsNow.append(r.runSimpleSearchBench(iter, facet_tasks_id, nightly_competitor_facets, coldRun, seed, staticSeed, filter=None))
+      resultsSearchNow.append(r.runSimpleSearchBench(iter, id, nightly_competitor, coldRun, seed, staticSeed, filter=None))
+      resultsFacetsNow.append(r.runSimpleSearchBench(iter, facet_tasks_id, nightly_competitor_facets, coldRun, seed, staticSeed, filter=None))
 
     print(f"now kill vmstat: pid={vmstatProcess.pid}")
     # TODO: messy!  can we get process group working so we can kill bash and its child reliably?
@@ -646,25 +647,30 @@ def run():
     topProcess.stop()
 
   else:
-    resultsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(JVM_COUNT)]
-    resultsNow.extend(["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, facet_tasks_id, nightly_competitor_facets.name, iter) for iter in range(JVM_COUNT)])
+    resultsSearchNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, id, nightly_competitor.name, iter) for iter in range(JVM_COUNT)]
+    resultsFacetsNow = ["%s/%s/modules/benchmark/%s.%s.x.%d" % (constants.BASE_DIR, NIGHTLY_DIR, facet_tasks_id, nightly_competitor_facets.name, iter) for iter in range(JVM_COUNT)]
   message("done search (%s)" % (now() - t0))
 
-  resultsPrev = []
+  resultsSearchPrev = []
+  resultsFacetsPrev = []
 
-  for fname in resultsNow:
-    prevFName = fname + ".prev"
-    if os.path.exists(prevFName):
-      resultsPrev.append(prevFName)
+  for resNow, resPrev in ((resultsSearchNow, resultsSearchPrev), (resultsFacetsNow, resultsFacetsPrev)):
+    for fname in resNow:
+      prevFName = fname + ".prev"
+      if os.path.exists(prevFName):
+        resPrev.append(prevFName)
 
   #if len(resultsPrev) == 0 and DEBUG:
-  if len(resultsPrev) == 0:
+  if len(resultsSearchPrev) == 0:
     # sidestep exception when we can't find any previous results because DEBUG
-    resultsPrev = resultsNow
+    resultsSearchPrev = resultsSearchNow
+  if len(resultsFacetsPrev) == 0:
+    # sidestep exception when we can't find any previous results because DEBUG
+    resultsFacetsPrev = resultsFacetsNow
 
   output = []
-  searchResults, cmpDiffs, searchHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
-  facetResults, facetsCmpDiffs, facetsHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
+  searchResults, cmpDiffs, searchHeaps = r.simpleReport(resultsSearchPrev, resultsSearchNow, False, True, "prev", "now", writer=output.append)
+  facetResults, facetsCmpDiffs, facetsHeaps = r.simpleReport(resultsFacetsPrev, resultsFacetsNow, False, True, "prev", "now", writer=output.append)
 
   #END moved block
 
@@ -960,13 +966,13 @@ def run():
     facetsHeaps
   )
 
-  for fname in resultsNow:
+  for fname in resultsSearchNow + resultsFacetsNow:
     shutil.copy(fname, runLogDir)
     if os.path.exists(fname + ".stdout"):
       shutil.copy(fname + ".stdout", runLogDir)
 
   if REAL:
-    for fname in resultsNow:
+    for fname in resultsSearchNow + resultsFacetsNow:
       shutil.move(fname, fname + ".prev")
 
     #if not DEBUG:
