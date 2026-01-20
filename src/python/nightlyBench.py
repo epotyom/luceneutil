@@ -652,8 +652,6 @@ def run():
 
   resultsPrev = []
 
-  searchResults = searchHeap = None
-
   for fname in resultsNow:
     prevFName = fname + ".prev"
     if os.path.exists(prevFName):
@@ -665,7 +663,8 @@ def run():
     resultsPrev = resultsNow
 
   output = []
-  results, cmpDiffs, searchHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
+  searchResults, cmpDiffs, searchHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
+  facetResults, facetsCmpDiffs, facetsHeaps = r.simpleReport(resultsPrev, resultsNow, False, True, "prev", "now", writer=output.append)
 
   #END moved block
 
@@ -921,18 +920,22 @@ def run():
 
   if os.path.exists("out.png"):
     shutil.move("out.png", "%s/%s.png" % (constants.NIGHTLY_REPORTS_DIR, timeStamp))
-  searchResults = results
 
-  print("  heaps: %s" % str(searchHeaps))
+  print("  search heaps: %s" % str(searchHeaps))
+  print("  facets heaps: %s" % str(facetsHeaps))
 
-  if cmpDiffs is not None:
-    warnings, errors, overlap = cmpDiffs
-    print("WARNING: search result differences: %s" % str(warnings))
-    if len(errors) > 0 and not DO_RESET:
-      raise RuntimeError("search result differences: %s" % str(errors))
-  else:
-    cmpDiffs = None
+  for cmpDiff in [cmpDiffs, facetsCmpDiffs]:
+    if cmpDiff is not None:
+      warnings, errors, overlap = cmpDiff
+      print("WARNING: search result differences: %s" % str(warnings))
+      if len(errors) > 0 and not DO_RESET:
+        raise RuntimeError("search result differences: %s" % str(errors))
+    else:
+      searchHeaps = None
+  if cmpDiffs is None:
     searchHeaps = None
+  if facetsCmpDiffs is None:
+    facetsHeaps = None
 
   results = (
     start,
@@ -954,6 +957,7 @@ def run():
     medQuantizedVectorsIndexTime,
     medQuantizedVectorsBytesIndexed,
     facetResults,
+    facetsHeaps
   )
 
   for fname in resultsNow:
@@ -1174,6 +1178,13 @@ def makeGraphs():
       else:
         openGitHubPRCount, closedGitHubPRCount = None, None
 
+
+      if len(tup) > 18:
+        facetResults, facetHeaps = tup[18:20]
+      else:
+        facetResults, facetHeaps = None, None
+
+
       timeStampString = "%04d-%02d-%02d %02d:%02d:%02d" % (timeStamp.year, timeStamp.month, timeStamp.day, timeStamp.hour, timeStamp.minute, int(timeStamp.second))
       date = "%02d/%02d/%04d" % (timeStamp.month, timeStamp.day, timeStamp.year)
       if date in ("09/03/2014",):
@@ -1222,7 +1233,10 @@ def makeGraphs():
       nrtChartData.append("%s,%.3f,%.2f" % (timeStampString, mean, stdDev))
       if searchResults is not None:
         days.append(timeStamp)
-        for cat, (minQPS, maxQPS, avgQPS, stdDevQPS) in list(searchResults.items()):
+        resultsList = list(searchResults.items())
+        if facetResults:
+          resultsList.extend(facetResults.items())
+        for cat, (minQPS, maxQPS, avgQPS, stdDevQPS) in resultsList:
           if isinstance(cat, bytes):
             # TODO: why does this happen!?
             cat = str(cat, "utf-8")
