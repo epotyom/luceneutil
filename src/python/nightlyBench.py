@@ -863,7 +863,7 @@ def run():
     w('<a id="profiler_searching_cpu"></a>')
     w("<b>CPU:</b><br>")
     w("<pre>\n")
-    for stackSize, result in nightly_competition.getAggregateProfilerResult(id, "cpu", stackSize=JFR_STACK_SIZES, count=50):
+    for stackSize, result in nightly_competitor.getAggregateProfilerResult(id, "cpu", stackSize=JFR_STACK_SIZES, count=50):
       w(f'\n<a id="profiler_searching_{stackSize}_cpu"></a>')
       w(f"\n<pre>{result}</pre>")
 
@@ -871,7 +871,7 @@ def run():
     w("<b>HEAP:</b><br>")
     w('<a id="profiler_searching_heap"></a>')
     w("<pre>\n")
-    for stackSize, result in nightly_competition.getAggregateProfilerResult(id, "heap", stackSize=JFR_STACK_SIZES, count=50):
+    for stackSize, result in nightly_competitor.getAggregateProfilerResult(id, "heap", stackSize=JFR_STACK_SIZES, count=50):
       w(f'\n<a id="profiler_searching_{stackSize}_heap"></a>')
       w(f"\n<pre>{result}</pre>")
     w("</pre>")
