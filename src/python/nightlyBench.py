@@ -601,6 +601,7 @@ def run():
   ##message("fixedIndexAtClose %s" % atClose)
   ##fixedIndexAtClose = atClose
   fixedIndexAtClose = "atClose!!"
+  profilerSearchIndex = None
 
   indexPathPrev = "%s/trunk.nightly.index.prev" % constants.INDEX_DIR_BASE
 
