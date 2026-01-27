@@ -1292,7 +1292,6 @@ def makeGraphs():
           while subcat_ordinal >= len(searchChartData[cat][timeStampString]):
             searchChartData[cat][timeStampString].append(0)
           searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f" % (avgQPS * qpsMult)
-
         fixed_index_size_file_name = f"{constants.NIGHTLY_LOG_DIR}/{subDir}/fixed_index_bytes.pk"
         if os.path.exists(fixed_index_size_file_name):
           with open(fixed_index_size_file_name, "rb") as f:
@@ -1374,8 +1373,8 @@ def makeGraphs():
   sort(gcIndexTimesChartData)
   sort(fixedIndexSizeChartData)
   searchChartDataFinal = {cat:
-                            [",".join(searchChartHeaders)]
-                            + [ ts + "," + ",".join(v) for ts,v in data.items()].sort()
+                            [",".join(searchChartHeaders[cat])]
+                            + sorted([ts + "," + ",".join(v) for ts,v in data.items()])
                           for cat, data in searchChartData.items()}
 
 
