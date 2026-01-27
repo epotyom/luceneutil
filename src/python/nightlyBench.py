@@ -1122,6 +1122,7 @@ def makeGraphs():
   gcIndexTimesChartData = ["Date,JIT (sec),Young GC (sec),Old GC (sec)"]
   fixedIndexSizeChartData = ["Date,Size (GB)"]
   gcSearchTimesChartData = ["Date,JIT (sec),Young GC (sec),Old GC (sec)"]
+  # For Search tasks headers/number of columns is dynamic as it depends on number of subtasks. If there are no subtasks, use "QPS" by default
   searchChartHeaders = {}
   searchChartData = {}
   storedFieldsResults = {
@@ -1257,9 +1258,9 @@ def makeGraphs():
           elif timeStampString not in searchChartData[cat]:
             searchChartData[cat][timeStampString] = []
           try:
-            subcat_ordinal = searchChartHeaders[cat].index(subcat, 1)  # first element is always Date
+            subcat_ordinal = searchChartHeaders[cat].index(subcat, 1) - 1  # skip first element which is always Date
           except ValueError:
-            subcat_ordinal = len(searchChartHeaders[cat])
+            subcat_ordinal = len(searchChartHeaders[cat]) - 1
             searchChartHeaders[cat].append(subcat)
           if cat == "PKLookup":
             qpsMult = 4000
@@ -1290,7 +1291,7 @@ def makeGraphs():
           # make sure searchChartData list size is sufficient
           while subcat_ordinal >= len(searchChartData[cat][timeStampString]):
             searchChartData[cat][timeStampString].append(0)
-          searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f" % avgQPS * qpsMult
+          searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f" % (avgQPS * qpsMult)
 
         fixed_index_size_file_name = f"{constants.NIGHTLY_LOG_DIR}/{subDir}/fixed_index_bytes.pk"
         if os.path.exists(fixed_index_size_file_name):
