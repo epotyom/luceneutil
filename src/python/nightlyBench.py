@@ -427,8 +427,7 @@ def run():
     groupByCat=True,
   )
 
-  # TMP nocommit todo revert
-  mediumSource = competition.WIKI_MEDIUM_10K #  competition.Data("wikimedium", constants.NIGHTLY_MEDIUM_LINE_FILE, MEDIUM_INDEX_NUM_DOCS, constants.WIKI_MEDIUM_TASKS_FILE)
+  mediumSource = competition.Data("wikimedium", constants.NIGHTLY_MEDIUM_LINE_FILE, MEDIUM_INDEX_NUM_DOCS, constants.WIKI_MEDIUM_TASKS_FILE)
 
   fastIndexMedium = nightly_competition.newIndex(
     NIGHTLY_DIR,
