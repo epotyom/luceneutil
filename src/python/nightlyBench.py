@@ -1290,8 +1290,8 @@ def makeGraphs():
 
           # make sure searchChartData list size is sufficient
           while subcat_ordinal >= len(searchChartData[cat][timeStampString]):
-            searchChartData[cat][timeStampString].append(0)
-          searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f" % (avgQPS * qpsMult)
+            searchChartData[cat][timeStampString].append('0.0,0.0')
+          searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f,%.3f" % (avgQPS * qpsMult, stdDevQPS * qpsMult)
         fixed_index_size_file_name = f"{constants.NIGHTLY_LOG_DIR}/{subDir}/fixed_index_bytes.pk"
         if os.path.exists(fixed_index_size_file_name):
           with open(fixed_index_size_file_name, "rb") as f:
