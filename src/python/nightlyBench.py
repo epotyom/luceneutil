@@ -1254,9 +1254,9 @@ def makeGraphs():
           if cat not in searchChartHeaders:
             searchChartHeaders[cat] = ["Date"]
           if cat not in searchChartData:
-            searchChartData[cat] = {timeStampString: []}
+            searchChartData[cat] = {timeStampString: {}}
           elif timeStampString not in searchChartData[cat]:
-            searchChartData[cat][timeStampString] = []
+            searchChartData[cat][timeStampString] = {}
           try:
             subcat_ordinal = searchChartHeaders[cat].index(subcat, 1) - 1  # skip first element which is always Date
           except ValueError:
@@ -1289,8 +1289,6 @@ def makeGraphs():
             continue
 
           # make sure searchChartData list size is sufficient
-          while subcat_ordinal >= len(searchChartData[cat][timeStampString]):
-            searchChartData[cat][timeStampString].append('0.0,0.0')
           searchChartData[cat][timeStampString][subcat_ordinal] = "%.3f,%.3f" % (avgQPS * qpsMult, stdDevQPS * qpsMult)
         fixed_index_size_file_name = f"{constants.NIGHTLY_LOG_DIR}/{subDir}/fixed_index_bytes.pk"
         if os.path.exists(fixed_index_size_file_name):
@@ -1374,7 +1372,8 @@ def makeGraphs():
   sort(fixedIndexSizeChartData)
   searchChartDataFinal = {cat:
                             [",".join(searchChartHeaders[cat])]
-                            + sorted([ts + "," + ",".join(v) for ts,v in data.items()])
+                            + sorted([ts + "," + ",".join(v.get(subcat_ord, ",")  #  allow missing values, it's a tupele qps,stddev
+                                                          for subcat_ord in range(0, len(searchChartHeaders[cat]) - 1)) for ts,v in data.items()])
                           for cat, data in searchChartData.items()}
 
 
