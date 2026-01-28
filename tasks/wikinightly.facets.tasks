@@ -9,14 +9,11 @@ BrowseDayOfYearTaxoFacets+postCollection: *:* +post_collection_facets:DayOfYear.
 BrowseDayOfYearTaxoFacets+duringCollection: *:* +during_collection_facets:DayOfYear.taxonomy
 BrowseRandomLabelTaxoFacets+postCollection: *:* +post_collection_facets:RandomLabel.taxonomy
 BrowseRandomLabelTaxoFacets+duringCollection: *:* +during_collection_facets:RandomLabel.taxonomy
-BrowseDateSSDVFacets+postCollection: *:* +post_collection_facets:Date.sortedset
-BrowseDateSSDVFacets+duringCollection: *:* +during_collection_facets:Date.sortedset
-BrowseMonthSSDVFacets+postCollection: *:* +post_collection_facets:Month.sortedset
-BrowseMonthSSDVFacets+duringCollection: *:* +during_collection_facets:Month.sortedset
-BrowseDayOfYearSSDVFacets+postCollection: *:* +post_collection_facets:DayOfYear.sortedset
-BrowseDayOfYearSSDVFacets+duringCollection: *:* +during_collection_facets:DayOfYear.sortedset
-BrowseRandomLabelSSDVFacets+postCollection: *:* +post_collection_facets:RandomLabel.sortedset
-BrowseRandomLabelSSDVFacets+duringCollection: *:* +during_collection_facets:RandomLabel.sortedset
+
+BrowseDateSSDVFacets: *:* +facets:Date.sortedset
+BrowseMonthSSDVFacets: *:* +facets:Month.sortedset
+BrowseDayOfYearSSDVFacets: *:* +facets:DayOfYear.sortedset
+BrowseRandomLabelSSDVFacets: *:* +facets:RandomLabel.sortedset
 
 TermDateFacets: 0 +facets:Date.taxonomy # freq=708472
 TermDateFacets: names +facets:Date.taxonomy # freq=402762
