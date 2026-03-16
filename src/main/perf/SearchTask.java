@@ -259,9 +259,9 @@ final class SearchTask extends Task {
             // The first collector manager in the list is responsible for collecting hits,
             // except when handling MatchAllDocsQuery, where hits are not collected due to historical reasons.
             TopScoreDocCollectorManager mainCollector = null;
-            if (q instanceof MatchAllDocsQuery == false) {
+            //if (q instanceof MatchAllDocsQuery == false) {
               mainCollector = new TopScoreDocCollectorManager(10, null, Integer.MAX_VALUE);
-            }
+            //}
             hits = facetOrchestrator.collect(q, searcher, mainCollector);
             for (FacetBuilder facetBuilder : facetBuilders) {
               FacetResult result = facetBuilder.getResult();
@@ -273,27 +273,6 @@ final class SearchTask extends Task {
             }
           }
           if (postCollectionFacetTasks.isEmpty() == false) {
-            if (q instanceof MatchAllDocsQuery) {
-              for (TaskParser.TaskBuilder.FacetTask request : postCollectionFacetTasks) {
-                if (request.dimension().startsWith("range:")) {
-                  throw new AssertionError("fix me!");
-                } else if (request.dimension().endsWith(".taxonomy")) {
-                  // TODO: fixme to handle N facets in one indexed field!  Need to make the facet counts once per indexed field...
-                  Facets facets = new FastTaxonomyFacetCounts(state.facetsConfig.getDimConfig(request.dimension()).indexFieldName, searcher.getIndexReader(), state.taxoReader, state.facetsConfig);
-                  FacetResult res = facets.getTopChildren(10, request.dimension());
-                  facetResults.add(res);
-                } else if (request.dimension().endsWith(".sortedset")) {
-                  // TODO: fixme to handle N facets in one SSDV field!  Need to make the facet counts once per indexed field...
-                  SortedSetDocValuesReaderState ssdvFacetsState = state.getSortedSetReaderState(state.facetsConfig.getDimConfig(request.dimension()).indexFieldName);
-                  SortedSetDocValuesFacetCounts facets = new SortedSetDocValuesFacetCounts(ssdvFacetsState);
-                  facetResults.add(facets.getTopChildren(10, request.dimension()));
-                } else {
-                  // should have been prevented higher up:
-                  throw new AssertionError("unknown facet method \"" + state.facetFields.get(request.dimension()) + "\"");
-                }
-              }
-              getFacetResultsMsec = (System.nanoTime() - t0) / 1000000.0;
-            } else {
               FacetsCollectorManager.FacetsResult fr = FacetsCollectorManager.search(searcher, q, 10, new FacetsCollectorManager());
               hits = fr.topDocs();
               FacetsCollector fc = fr.facetsCollector();
@@ -333,7 +312,6 @@ final class SearchTask extends Task {
                   throw new AssertionError("unknown facet method \"" + state.facetFields.get(request) + "\"");
                 }
               }
-            }
           }
           getFacetResultsMsec = (System.nanoTime() - t0) / 1000000.0;
         }
